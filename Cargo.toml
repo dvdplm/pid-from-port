@@ -1,0 +1,10 @@
+[package]
+name = "pid-from-port"
+version = "0.1.0"
+authors = ["David Palm <dvdplm@gmail.com>"]
+
+[dependencies]
+failure = "*"
+failure_derive = "*"
+regex = "*"
+lazy_static = "*"
