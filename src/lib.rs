@@ -36,7 +36,7 @@ fn get_cmd() -> Result<Command, Error> {
     }
 }
 
-pub fn pid_from_port(p: String) -> Result<usize, Error> {
+pub fn pid_from_port(p: u16) -> Result<u32, Error> {
     let out = get_cmd()?.output()?;
     if !out.status.success() {
         return Err(format_err!("Error running command: {:?}", out.status))
@@ -52,12 +52,14 @@ pub fn pid_from_port(p: String) -> Result<usize, Error> {
             .and_then(|port| EXTRACT_PORT.captures(port))
             .and_then(|capts| capts.get(1))
             .map(|port_capt| port_capt.as_str())
-            .ok_or_else(|| format_err!("Could not find port {} in {}", p, line));
+            .ok_or_else(|| format_err!("Could not find port {} in {}", p, line))
+            .and_then(|port_str| port_str.parse::<u16>().map_err(|_| format_err!("Parse error parsing {:?}", port_str)));
+
         if let Ok(port) = port {
             if port == p {
                 return columns.nth(COLS.1 - COLS.0 - 1)
                     .ok_or_else(|| format_err!("No PID found in line {} at column {}", line, COLS.1 - COLS.0 - 1))
-                    .and_then(|pid| pid.parse::<usize>().map_err(|_| format_err!("Parse error")));
+                    .and_then(|pid| pid.parse::<u32>().map_err(|_| format_err!("Parse error")));
             }
         }
     }
@@ -70,19 +72,30 @@ mod tests {
 
     #[test]
     fn test_pid_from_port_unused_port() {
-        let res = pid_from_port("not a port".into());
+        let res = pid_from_port(0);
         assert!(res.is_err())
     }
 
     #[test]
     fn test_pid_from_port_used_port() {
-        let res = pid_from_port("22".into());
+        let res = pid_from_port(22);
         assert!(res.is_ok())
     }
 
     #[test]
     fn test_pid_from_port_is_1_for_port_22() {
-        let res = pid_from_port("22".into());
+        let res = pid_from_port(22);
         assert_eq!(res.unwrap(), 1);
+    }
+
+    #[test]
+    fn test_finds_own_pid_when_we_run_a_server() {
+        #![feature(getpid)] // Will be stable in Rust 1.27.0
+        use std::process;
+        use std::net::TcpListener;
+        const PORT : u16 = 61233;
+        let listener = TcpListener::bind(format!("127.0.0.1:{}", PORT)).expect(&*format!("Could not bind to {}", PORT));
+        assert_eq!(pid_from_port(PORT).unwrap(), process::id());
+        drop(listener);
     }
 }
