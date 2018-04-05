@@ -36,8 +36,7 @@ fn get_cmd() -> Result<Command, Error> {
     }
 }
 
-//    tcp4       0      0  10.8.8.148.22417       104.20.16.34.443       ESTABLISHED 262144 131175  90729      0
-fn pid_from_port(p: String) -> Result<usize, Error> {
+pub fn pid_from_port(p: String) -> Result<usize, Error> {
     let out = get_cmd()?.output()?;
     if !out.status.success() {
         return Err(format_err!("Error running command: {:?}", out.status))
@@ -62,37 +61,28 @@ fn pid_from_port(p: String) -> Result<usize, Error> {
             }
         }
     }
-    Err(format_err!("No process uses {}", p))
+    Err(format_err!("No process uses '{}'", p))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    #[test]
-//    fn test_get_list() {
-//        let out = get_list();
-//        assert!(get_list().is_ok());
-//        // assert_eq!(get_list(), "blabla");
-//    }
+    use super::pid_from_port;
 
     #[test]
     fn test_pid_from_port_unused_port() {
         let res = pid_from_port("not a port".into());
-        println!("RES unused: {:?}", res);
         assert!(res.is_err())
     }
 
     #[test]
     fn test_pid_from_port_used_port() {
         let res = pid_from_port("22".into());
-        println!("RES used: {:?}", res);
         assert!(res.is_ok())
     }
 
     #[test]
     fn test_pid_from_port_is_1_for_port_22() {
         let res = pid_from_port("22".into());
-        println!("RES sshd is 1: {:?}", res);
         assert_eq!(res.unwrap(), 1);
     }
 }
