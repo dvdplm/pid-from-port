@@ -1,4 +1,3 @@
-#![feature(iterator_find_map)]
 extern crate regex;
 #[macro_use] extern crate failure;
 #[macro_use] extern crate lazy_static;
@@ -25,7 +24,7 @@ fn get_cmd() -> Result<Command, Error> {
         Ok(cmd)
     } else if cfg!(target_os="linux") {
         let mut cmd = Command::new("ss");
-        cmd.arg("-tunkp");
+        cmd.arg("-tunlp");
         Ok(cmd)
     } else if cfg!(target_os="windows") {
         let mut cmd = Command::new("netstat");
@@ -63,7 +62,7 @@ pub fn pid_from_port(p: u16) -> Result<u32, Error> {
             }
         }
     }
-    Err(format_err!("No process uses '{}'", p))
+    Err(format_err!("No process uses port '{}'", p))
 }
 
 #[cfg(test)]
@@ -90,7 +89,6 @@ mod tests {
 
     #[test]
     fn test_finds_own_pid_when_we_run_a_server() {
-        #![feature(getpid)] // Will be stable in Rust 1.27.0
         use std::process;
         use std::net::TcpListener;
         const PORT : u16 = 61233;
