@@ -3,3 +3,5 @@
 Cargo.lock
 misc
 .idea
+.DS_Store
+cmake-build-debug
